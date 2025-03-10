@@ -21,11 +21,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       
-      - name: Setup SSH keys
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-      
       - name: Clone optiprofiler repository
         run: |
           git clone --recurse-submodules git@github.com:optiprofiler/optiprofiler.git
@@ -37,23 +32,22 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      
-      - name: Run setup in MATLAB
-        uses: matlab-actions/run-command@v1
-        with:
-          command: cd optiprofiler; setup
-      
+
       - name: Run Python script
         run: |
           python s_getDims.py
       
-      - name: Run MATLAB script
-        uses: matlab-actions/run-command@v1
+      - name: Run setup and run script in MATLAB
+        uses: matlab-actions/run-command@v2.1.1
         with:
-          command: s_getInfo
+          command: |
+            cd optiprofiler
+            setup
+            cd ..
+            s_getInfo
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: probinfo-files
           path: |
