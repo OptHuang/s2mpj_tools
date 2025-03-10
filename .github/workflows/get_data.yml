@@ -29,9 +29,6 @@ jobs:
           submodules: recursive
           ref: main
       
-      - name: Setup MATLAB
-        uses: matlab-actions/setup-matlab@v2
-      
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -40,6 +37,13 @@ jobs:
       - name: Run Python script
         run: |
           python s_getDims.py
+
+      - name: Set up MATLAB with optimization toolbox
+        if: ${{ matrix.with_optim_toolbox == 'yes' }}
+        uses: matlab-actions/setup-matlab@v2
+        with:
+          release: ${{ matrix.matlab }}
+          products: Optimization_Toolbox Parallel_Computing_Toolbox
       
       - name: Run setup and run script in MATLAB
         uses: matlab-actions/run-command@v2.1.1
