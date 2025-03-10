@@ -30,7 +30,7 @@ jobs:
           ref: main
       
       - name: Setup MATLAB
-        uses: matlab-actions/setup-matlab@v1
+        uses: matlab-actions/setup-matlab@v2
       
       - name: Setup Python
         uses: actions/setup-python@v4
