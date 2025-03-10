@@ -23,7 +23,7 @@ jobs:
       
       - name: Clone optiprofiler repository
         run: |
-          git clone --recurse-submodules git@github.com:optiprofiler/optiprofiler.git
+          git clone --recurse-submodules https://github.com/optiprofiler/optiprofiler.git
       
       - name: Setup MATLAB
         uses: matlab-actions/setup-matlab@v1
