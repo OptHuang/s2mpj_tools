@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 # Set a upper bound for the parameter value, which is varargins for problems in S2MPJ
-max_para = 50
+max_para = 500
 
 # Get the current working directory
 cwd = os.getcwd()
