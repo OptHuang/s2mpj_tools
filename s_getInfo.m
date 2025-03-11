@@ -94,7 +94,7 @@ function s_getInfo()
     probinfo{1, 37} = 'm_nonlinear_eqs';
     probinfo{1, 38} = 'f0s';
 
-    for i_problem = 2:length(problem_names) + 1
+    parfor i_problem = 2:length(problem_names) + 1
 
         tmp = cell(1, 38);
 
