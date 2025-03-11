@@ -27,7 +27,7 @@ jobs:
           repository: optiprofiler/optiprofiler
           path: optiprofiler
           submodules: recursive
-          ref: main
+          ref: matlab
       
       - name: Setup Python
         uses: actions/setup-python@v4
