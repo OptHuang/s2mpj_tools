@@ -1,6 +1,9 @@
 function s_getInfo()
 %S_GETINFO Get information about all problems in the problem set "S2MPJ".
 
+    % Set the timeout (seconds) for each problem to be loaded
+    timeout = 300;
+
     % Add paths (the parent directory of the current directory)
     current_path = fileparts(mfilename('fullpath'));
     filename = [current_path, '/optiprofiler/problems/s2mpj/src/list_of_matlab_problems'];
@@ -94,215 +97,46 @@ function s_getInfo()
     probinfo{1, 37} = 'm_nonlinear_eqs';
     probinfo{1, 38} = 'f0s';
 
-    parfor i_problem = 2:length(problem_names) + 1
+    pool = gcp();
+
+    % Record the log
+    diary([saving_path, '/log.txt']);
+
+    for i_problem = 2:length(problem_names) + 1
 
         tmp = cell(1, 38);
 
         problem_name = problem_names{i_problem - 1};
         problem_name = strrep(problem_name, '.m', '');  % Remove the .m extension
-        tmp{1} = problem_name;
+        
 
         % Try to load the problem and ignore all the errors and messages
         fprintf('\nLoading problem %i: %s\n', i_problem - 1, problem_name);
 
         try
-            p = s_load(problem_name);
-            fprintf('Problem %i loaded successfully\n\n', i_problem - 1);
+            % Use parfeval to load the problem. If it takes too long, then cancel it
+            f = parfeval(pool, @get_init_info, 1, problem_name);
+            [idx, info_init] = fetchNext(f, timeout);
+            if isempty(idx)
+                cancel(f);
+                tmp{1} = [problem_name, ' (timeout)'];
+                fprintf('Timeout loading problem %i: %s\n', i_problem - 1, problem_name);
+                probinfo(i_problem, :) = tmp;
+                continue
+            end
+            fprintf('Problem %s loaded successfully\n\n', problem_name);
         catch
             tmp{1} = [problem_name, ' (error loading)'];
             fprintf('Error loading problem %i: %s\n', i_problem - 1, problem_name);
+            probinfo(i_problem, :) = tmp;
+            continue
         end
 
-        try
-            switch p.p_type
-                case 'nonlinearly constrained'
-                    tmp{2} = 'n';
-                case 'linearly constrained'
-                    tmp{2} = 'l';
-                case 'bound-constrained'
-                    tmp{2} = 'b';
-                case 'unconstrained'
-                    tmp{2} = 'u';
-            end
-        catch
-            tmp{2} = 'unknown';
-        end
-
-        try
-            switch p.x_type
-                case 'real'
-                    tmp{3} = 'r';
-                case 'integer'
-                    tmp{3} = 'i';
-                case 'binary'
-                    tmp{3} = 'b'; 
-            end
-        catch
-            tmp{3} = 'unknown';
-        end
-
-        % dim
-        try
-            tmp{4} = p.n;
-        catch
-            tmp{4} = 'unknown';
-        end
-
-        % ml
-        try
-            tmp{6} = sum(~isinf(-p.xl));
-        catch
-            tmp{6} = 'unknown';
-        end
-
-        % mu
-        try
-            tmp{7} = sum(~isinf(p.xu));
-        catch
-            tmp{7} = 'unknown';
-        end
-
-        % mb
-        try
-            tmp{5} = tmp{6} + tmp{7};
-        catch
-            tmp{5} = 'unknown';
-        end
-
-        % m_linear_ub
-        try
-            tmp{13} = p.m_linear_ub;
-        catch
-            tmp{13} = 'unknown';
-        end
-
-        % m_linear_eq
-        try
-            tmp{14} = p.m_linear_eq;
-        catch
-            tmp{14} = 'unknown';
-        end
-
-        % m_nonlinear_ub
-        try
-            tmp{15} = p.m_nonlinear_ub;
-        catch
-            tmp{15} = 'unknown';
-        end
-
-        % m_nonlinear_eq
-        try
-            tmp{16} = p.m_nonlinear_eq;
-        catch
-            tmp{16} = 'unknown';
-        end
-
-        % m_con
-        try
-            tmp{8} = p.m_linear_eq + p.m_linear_ub + p.m_nonlinear_eq + p.m_nonlinear_ub;
-        catch
-            tmp{8} = 'unknown';
-        end
-
-        % m_linear
-        try
-            tmp{9} = p.m_linear_eq + p.m_linear_ub;
-        catch
-            tmp{9} = 'unknown';
-        end
-
-        % m_nonlinear
-        try
-            tmp{10} = p.m_nonlinear_ub + p.m_nonlinear_eq;
-        catch
-            tmp{10} = 'unknown';
-        end
-
-        % m_ub
-        try
-            tmp{11} = p.m_linear_ub + p.m_nonlinear_ub;
-        catch
-            tmp{11} = 'unknown';
-        end
-
-        % m_eq
-        try
-            tmp{12} = p.m_linear_eq + p.m_nonlinear_eq;
-        catch
-            tmp{12} = 'unknown';
-        end
-
-        % f0
-        try
-            tmp{17} = p.fun(p.x0);
-        catch
-            tmp{17} = 'unknown';
-        end
-
-        % isgrad, ishess, isJcub, isJceq, isHcub, isHceq
-        try
-            g = p.grad(p.x0);
-            if ~isempty(g)
-                tmp{18} = 1;
-            else
-                tmp{18} = 0;
-            end
-        catch
-            tmp{18} = 0;
-        end
-        try
-            h = p.hess(p.x0);
-            if ~isempty(h)
-                tmp{19} = 1;
-            else
-                tmp{19} = 0;
-            end
-        catch
-            tmp{19} = 0;
-        end
-        try
-            J = p.Jcub(p.x0);
-            if ~isempty(J)
-                tmp{20} = 1;
-            else
-                tmp{20} = 0;
-            end
-        catch
-            tmp{20} = 0;
-        end
-        try
-            J = p.Jceq(p.x0);
-            if ~isempty(J)
-                tmp{21} = 1;
-            else
-                tmp{21} = 0;
-            end
-        catch
-            tmp{21} = 0;
-        end
-        try
-            H = p.Hcub(p.x0);
-            if ~isempty(H)
-                tmp{22} = 1;
-            else
-                tmp{22} = 0;
-            end
-        catch
-            tmp{22} = 0;
-        end
-        try
-            H = p.Hceq(p.x0);
-            if ~isempty(H)
-                tmp{23} = 1;
-            else
-                tmp{23} = 0;
-            end
-        catch
-            tmp{23} = 0;
-        end
+        % Record the information
+        tmp(1:23) = info_init;
 
         % argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s
-        [tmp{24}, tmp{25}, tmp{26}, tmp{27}, tmp{28}, tmp{29}, tmp{30}, tmp{31}, tmp{32}, tmp{33}, tmp{34}, tmp{35}, tmp{36}, tmp{37}, tmp{38}] = check_args(problem_name, para_problem_names, problem_argins);
+        [tmp{24}, tmp{25}, tmp{26}, tmp{27}, tmp{28}, tmp{29}, tmp{30}, tmp{31}, tmp{32}, tmp{33}, tmp{34}, tmp{35}, tmp{36}, tmp{37}, tmp{38}] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins);
 
         probinfo(i_problem, :) = tmp;
     end
@@ -361,14 +195,239 @@ function s_getInfo()
     
     fprintf('Task completed\n');
 
+    diary off;
 end
 
-% function p = load_problem(problem_name)
+function info_init = get_init_info(problem_name)
 
-%     [~, p] = evalc('s_load(problem_name)');
-% end
+    % Note that, since we are loading problems from S2MPJ, we should pay attention that problems in S2MPJ need to be 'set up'. Thus, if you set up one problem inside one pool, you will fail to use its methods in another pool!
 
-function [argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s] = check_args(problem_name, para_problem_names, problem_argins)
+    info_init = cell(1, 23);
+    info_init{1} = problem_name;
+
+    % Load the problem
+    p = s_load(problem_name);
+
+    try
+        switch p.p_type
+            case 'nonlinearly constrained'
+                info_init{2} = 'n';
+            case 'linearly constrained'
+                info_init{2} = 'l';
+            case 'bound-constrained'
+                info_init{2} = 'b';
+            case 'unconstrained'
+                info_init{2} = 'u';
+        end
+    catch
+        info_init{2} = 'unknown';
+    end
+
+    try
+        switch p.x_type
+            case 'real'
+                info_init{3} = 'r';
+            case 'integer'
+                info_init{3} = 'i';
+            case 'binary'
+                info_init{3} = 'b'; 
+        end
+    catch
+        info_init{3} = 'unknown';
+    end
+
+    % dim
+    try
+        info_init{4} = p.n;
+    catch
+        info_init{4} = 'unknown';
+    end
+
+    % ml
+    try
+        info_init{6} = sum(~isinf(-p.xl));
+    catch
+        info_init{6} = 'unknown';
+    end
+
+    % mu
+    try
+        info_init{7} = sum(~isinf(p.xu));
+    catch
+        info_init{7} = 'unknown';
+    end
+
+    % mb
+    try
+        info_init{5} = info_init{6} + info_init{7};
+    catch
+        info_init{5} = 'unknown';
+    end
+
+    % m_linear_ub
+    try
+        info_init{13} = p.m_linear_ub;
+    catch
+        info_init{13} = 'unknown';
+    end
+
+    % m_linear_eq
+    try
+        info_init{14} = p.m_linear_eq;
+    catch
+        info_init{14} = 'unknown';
+    end
+
+    % m_nonlinear_ub
+    try
+        info_init{15} = p.m_nonlinear_ub;
+    catch
+        info_init{15} = 'unknown';
+    end
+
+    % m_nonlinear_eq
+    try
+        info_init{16} = p.m_nonlinear_eq;
+    catch
+        info_init{16} = 'unknown';
+    end
+
+    % m_con
+    try
+        info_init{8} = p.m_linear_eq + p.m_linear_ub + p.m_nonlinear_eq + p.m_nonlinear_ub;
+    catch
+        info_init{8} = 'unknown';
+    end
+
+    % m_linear
+    try
+        info_init{9} = p.m_linear_eq + p.m_linear_ub;
+    catch
+        info_init{9} = 'unknown';
+    end
+
+    % m_nonlinear
+    try
+        info_init{10} = p.m_nonlinear_ub + p.m_nonlinear_eq;
+    catch
+        info_init{10} = 'unknown';
+    end
+
+    % m_ub
+    try
+        info_init{11} = p.m_linear_ub + p.m_nonlinear_ub;
+    catch
+        info_init{11} = 'unknown';
+    end
+
+    % m_eq
+    try
+        info_init{12} = p.m_linear_eq + p.m_nonlinear_eq;
+    catch
+        info_init{12} = 'unknown';
+    end
+
+    % f0
+    try
+        info_init{17} = p.fun(p.x0);
+    catch
+        info_init{17} = 'unknown';
+    end
+
+    % isgrad, ishess, isJcub, isJceq, isHcub, isHceq
+    try
+        g = p.grad(p.x0);
+        if ~isempty(g)
+            info_init{18} = 1;
+        else
+            info_init{18} = 0;
+        end
+    catch
+        info_init{18} = 0;
+    end
+    try
+        h = p.hess(p.x0);
+        if ~isempty(h)
+            info_init{19} = 1;
+        else
+            info_init{19} = 0;
+        end
+    catch
+        info_init{19} = 0;
+    end
+    try
+        J = p.Jcub(p.x0);
+        if ~isempty(J)
+            info_init{20} = 1;
+        else
+            info_init{20} = 0;
+        end
+    catch
+        info_init{20} = 0;
+    end
+    try
+        J = p.Jceq(p.x0);
+        if ~isempty(J)
+            info_init{21} = 1;
+        else
+            info_init{21} = 0;
+        end
+    catch
+        info_init{21} = 0;
+    end
+    try
+        H = p.Hcub(p.x0);
+        if ~isempty(H)
+            info_init{22} = 1;
+        else
+            info_init{22} = 0;
+        end
+    catch
+        info_init{22} = 0;
+    end
+    try
+        H = p.Hceq(p.x0);
+        if ~isempty(H)
+            info_init{23} = 1;
+        else
+            info_init{23} = 0;
+        end
+    catch
+        info_init{23} = 0;
+    end
+end
+
+function info_arg = get_arg_info(problem_name, arg)
+
+    % Same note as in `get_init_info`
+
+    info_arg = struct();
+
+    % Load the problem
+    if iscell(arg)
+        p = s_load(problem_name, arg{:});
+    else
+        p = s_load(problem_name, arg);
+    end
+
+    info_arg.n = p.n;
+    info_arg.ml = sum(~isinf(-p.xl));
+    info_arg.mu = sum(~isinf(p.xu));
+    info_arg.m_linear_ub = p.m_linear_ub;
+    info_arg.m_linear_eq = p.m_linear_eq;
+    info_arg.m_nonlinear_ub = p.m_nonlinear_ub;
+    info_arg.m_nonlinear_eq = p.m_nonlinear_eq;
+    info_arg.mb = info_arg.ml + info_arg.mu;
+    info_arg.m_con = p.m_linear_eq + p.m_linear_ub + p.m_nonlinear_eq + p.m_nonlinear_ub;
+    info_arg.m_linear = p.m_linear_eq + p.m_linear_ub;
+    info_arg.m_nonlinear = p.m_nonlinear_ub + p.m_nonlinear_eq;
+    info_arg.m_ub = p.m_linear_ub + p.m_nonlinear_ub;
+    info_arg.m_eq = p.m_linear_eq + p.m_nonlinear_eq;
+    info_arg.f0 = p.fun(p.x0);
+
+end
+
+function [argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins)
     % Try to find all possible dimensions of each problem in S2MPJ
 
     argins = [];
@@ -398,53 +457,10 @@ function [argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m
     % Case 1: 3,100,1000,10000, then convert to {3, 100, 1000, 10000}
     % Case 2: {1.5}{2}{11,51,101,01,501,1001,5001,10001}, then convert to a cell(1, n), where n is the number of '{' in the string
 
-    % Case 1
-    if i_str(1) ~= '{'
+    if i_str(1) ~= '{'  % Case 1
         argins_tmp = str2num(i_str);
         len = length(argins_tmp);
-        for i_arg = 1:len
-            try
-                arg = argins_tmp(i_arg);
-                fprintf('\nLoading problem %s with argin %f\n', problem_name, arg);
-                p = s_load(problem_name, arg);
-                dim = p.n;
-                ml = sum(~isinf(-p.xl));
-                mu = sum(~isinf(p.xu));
-                m_linear_ub = p.m_linear_ub;
-                m_linear_eq = p.m_linear_eq;
-                m_nonlinear_ub = p.m_nonlinear_ub;
-                m_nonlinear_eq = p.m_nonlinear_eq;
-                mb = ml + mu;
-                m_con = p.m_linear_eq + p.m_linear_ub + p.m_nonlinear_eq + p.m_nonlinear_ub;
-                m_linear = p.m_linear_eq + p.m_linear_ub;
-                m_nonlinear = p.m_nonlinear_ub + p.m_nonlinear_eq;
-                m_ub = p.m_linear_ub + p.m_nonlinear_ub;
-                m_eq = p.m_linear_eq + p.m_nonlinear_eq;
-                f0 = p.fun(p.x0);
-
-                argins = [argins, arg];
-                dims = [dims, dim];
-                mbs = [mbs, mb];
-                mls = [mls, ml];
-                mus = [mus, mu];
-                m_cons = [m_cons, m_con];
-                m_linears = [m_linears, m_linear];
-                m_nonlinears = [m_nonlinears, m_nonlinear];
-                m_ubs = [m_ubs, m_ub];
-                m_eqs = [m_eqs, m_eq];
-                m_linear_ubs = [m_linear_ubs, m_linear_ub];
-                m_linear_eqs = [m_linear_eqs, m_linear_eq];
-                m_nonlinear_ubs = [m_nonlinear_ubs, m_nonlinear_ub];
-                m_nonlinear_eqs = [m_nonlinear_eqs, m_nonlinear_eq];
-                f0s = [f0s, f0];
-                fprintf('Problem %s with argin %f loaded successfully\n\n', problem_name, arg);
-            catch
-                continue
-            end
-        end
-    end
-    % Case 2
-    if i_str(1) == '{'
+    else    % Case 2
         % Find the number of '{' in the string
         n = length(strfind(i_str, '{'));
         % Initialize the cell array
@@ -460,28 +476,58 @@ function [argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m
         end
         argins_end = [];
         len = length(argins_tmp{n});
-        for i_arg = 1:len
-            try
-                args = argins_tmp;
-                args{n} = argins_tmp{n}(i_arg);
-                fprintf('\nLoading problem %s with the final argin %f\n', problem_name, args{n});
-                p = s_load(problem_name, args{:});
-                dim = p.n;
-                m_con = p.m_linear_eq + p.m_linear_ub + p.m_nonlinear_eq + p.m_nonlinear_ub;
-                f0 = p.fun(p.x0);
-                argins_end = [argins_end, args{n}];
-                dims = [dims, dim];
-                m_cons = [m_cons, m_con];
-                f0s = [f0s, f0];
-                fprintf('Problem %s with the final argin %f loaded successfully\n\n', problem_name, args{n});
-            catch
-                continue
-            end
-            argins = argins_tmp;
-            argins{end} = argins_end;
-        end
     end
 
+    for i_arg = 1:len
+        try
+            if iscell(argins_tmp)
+                arg = argins_tmp;
+                arg{n} = arg{n}(i_arg);
+                fprintf('\nLoading problem %s with argin %f\n', problem_name, arg{n});
+            else
+                arg = argins_tmp(i_arg);
+                fprintf('\nLoading problem %s with argin %f\n', problem_name, arg);
+            end
+            
+            f = parfeval(pool, @get_arg_info, 1, problem_name, arg);
+            [idx, info_arg] = fetchNext(f, timeout);
+            if isempty(idx)
+                cancel(f);
+                if iscell(arg)
+                    fprintf('Timeout loading problem %s with argin %f\n', problem_name, arg{n});
+                else
+                    fprintf('Timeout loading problem %s with argin %f\n', problem_name, arg);
+                end
+                continue
+            end
+
+            dims = [dims, info_arg.n];
+            mbs = [mbs, info_arg.mb];
+            mls = [mls, info_arg.ml];
+            mus = [mus, info_arg.mu];
+            m_cons = [m_cons, info_arg.m_con];
+            m_linears = [m_linears, info_arg.m_linear];
+            m_nonlinears = [m_nonlinears, info_arg.m_nonlinear];
+            m_ubs = [m_ubs, info_arg.m_ub];
+            m_eqs = [m_eqs, info_arg.m_eq];
+            m_linear_ubs = [m_linear_ubs, info_arg.m_linear_ub];
+            m_linear_eqs = [m_linear_eqs, info_arg.m_linear_eq];
+            m_nonlinear_ubs = [m_nonlinear_ubs, info_arg.m_nonlinear_ub];
+            m_nonlinear_eqs = [m_nonlinear_eqs, info_arg.m_nonlinear_eq];
+            f0s = [f0s, info_arg.f0];
+
+            if iscell(arg)
+                argins_end = [argins_end, arg{n}];
+                argins = argins_tmp;
+                argins{end} = argins_end;
+            else
+                argins = [argins, arg];
+                fprintf('Problem %s with argin %f loaded successfully\n\n', problem_name, arg);
+            end
+        catch
+            continue
+        end
+    end
 end
 
 function isis = isintegervector(x)
