@@ -19,6 +19,9 @@ function s_getInfo()
     problem_exclude = {'SPARCO10LS.m'; 'SPARCO10.m'; 'SPARCO11LS.m'; 'SPARCO11.m'; 'SPARCO12LS.m'; 'SPARCO12.m'; 'SPARCO2LS.m'; 'SPARCO2.m'; 'SPARCO3LS.m'; 'SPARCO3.m'; 'SPARCO5LS.m'; 'SPARCO5.m'; 'SPARCO7LS.m'; 'SPARCO7.m'; 'SPARCO8LS.m'; 'SPARCO8.m'; 'SPARCO9LS.m'; 'SPARCO9.m'; 'ROSSIMP3_mp.m'};
     problem_names = setdiff(problem_names, problem_exclude);
 
+    % List all the known feasible problems
+    feasibility_list = {};
+
     % Find problems that are parametric
     path_file = [current_path, '/list_of_parametric_problems_with_parameters.txt'];
     fid = fopen(path_file, 'r');
@@ -75,27 +78,28 @@ function s_getInfo()
     probinfo{1, 15} = 'm_nonlinear_ub';
     probinfo{1, 16} = 'm_nonlinear_eq';
     probinfo{1, 17} = 'f0';
-    probinfo{1, 18} = 'isgrad';
-    probinfo{1, 19} = 'ishess';
-    probinfo{1, 20} = 'isJcub';
-    probinfo{1, 21} = 'isJceq';
-    probinfo{1, 22} = 'isHcub';
-    probinfo{1, 23} = 'isHceq';
-    probinfo{1, 24} = 'argins';
-    probinfo{1, 25} = 'dims';
-    probinfo{1, 26} = 'mbs';
-    probinfo{1, 27} = 'mls';
-    probinfo{1, 28} = 'mus';
-    probinfo{1, 29} = 'm_cons';
-    probinfo{1, 30} = 'm_linears';
-    probinfo{1, 31} = 'm_nonlinears';
-    probinfo{1, 32} = 'm_ubs';
-    probinfo{1, 33} = 'm_eqs';
-    probinfo{1, 34} = 'm_linear_ubs';
-    probinfo{1, 35} = 'm_linear_eqs';
-    probinfo{1, 36} = 'm_nonlinear_ubs';
-    probinfo{1, 37} = 'm_nonlinear_eqs';
-    probinfo{1, 38} = 'f0s';
+    probinfo{1, 18} = 'isfeasibility';
+    probinfo{1, 19} = 'isgrad';
+    probinfo{1, 20} = 'ishess';
+    probinfo{1, 21} = 'isjcub';
+    probinfo{1, 22} = 'isjceq';
+    probinfo{1, 23} = 'ishcub';
+    probinfo{1, 24} = 'ishceq';
+    probinfo{1, 25} = 'argins';
+    probinfo{1, 26} = 'dims';
+    probinfo{1, 27} = 'mbs';
+    probinfo{1, 28} = 'mls';
+    probinfo{1, 29} = 'mus';
+    probinfo{1, 30} = 'm_cons';
+    probinfo{1, 31} = 'm_linears';
+    probinfo{1, 32} = 'm_nonlinears';
+    probinfo{1, 33} = 'm_ubs';
+    probinfo{1, 34} = 'm_eqs';
+    probinfo{1, 35} = 'm_linear_ubs';
+    probinfo{1, 36} = 'm_linear_eqs';
+    probinfo{1, 37} = 'm_nonlinear_ubs';
+    probinfo{1, 38} = 'm_nonlinear_eqs';
+    probinfo{1, 39} = 'f0s';
 
     pool = gcp();
 
@@ -104,7 +108,7 @@ function s_getInfo()
 
     for i_problem = 2:length(problem_names) + 1
 
-        tmp = cell(1, 38);
+        tmp = cell(1, 39);
 
         problem_name = problem_names{i_problem - 1};
         problem_name = strrep(problem_name, '.m', '');  % Remove the .m extension
@@ -133,10 +137,10 @@ function s_getInfo()
         end
 
         % Record the information
-        tmp(1:23) = info_init;
+        tmp(1:24) = info_init;
 
         % argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s
-        [tmp{24}, tmp{25}, tmp{26}, tmp{27}, tmp{28}, tmp{29}, tmp{30}, tmp{31}, tmp{32}, tmp{33}, tmp{34}, tmp{35}, tmp{36}, tmp{37}, tmp{38}] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins);
+        [tmp{25}, tmp{26}, tmp{27}, tmp{28}, tmp{29}, tmp{30}, tmp{31}, tmp{32}, tmp{33}, tmp{34}, tmp{35}, tmp{36}, tmp{37}, tmp{38}, tmp{39}] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins);
 
         probinfo(i_problem, :) = tmp;
     end
@@ -327,27 +331,24 @@ function info_init = get_init_info(problem_name)
         info_init{12} = 'unknown';
     end
 
-    % f0
+    % f0 and isfeasibility
     try
         info_init{17} = p.fun(p.x0);
-    catch
-        info_init{17} = 'unknown';
-    end
-
-    % isgrad, ishess, isJcub, isJceq, isHcub, isHceq
-    try
-        g = p.grad(p.x0);
-        if ~isempty(g)
+        if isempty(info_init{17})
+            info_init{17} = 0;
             info_init{18} = 1;
         else
             info_init{18} = 0;
         end
     catch
-        info_init{18} = 0;
+        info_init{17} = 0;
+        info_init{18} = 1;
     end
+
+    % isgrad, ishess, isjcub, isjceq, ishcub, ishceq
     try
-        h = p.hess(p.x0);
-        if ~isempty(h)
+        g = p.grad(p.x0);
+        if ~isempty(g)
             info_init{19} = 1;
         else
             info_init{19} = 0;
@@ -356,8 +357,8 @@ function info_init = get_init_info(problem_name)
         info_init{19} = 0;
     end
     try
-        J = p.Jcub(p.x0);
-        if ~isempty(J)
+        h = p.hess(p.x0);
+        if ~isempty(h)
             info_init{20} = 1;
         else
             info_init{20} = 0;
@@ -366,7 +367,7 @@ function info_init = get_init_info(problem_name)
         info_init{20} = 0;
     end
     try
-        J = p.Jceq(p.x0);
+        J = p.jcub(p.x0);
         if ~isempty(J)
             info_init{21} = 1;
         else
@@ -376,8 +377,8 @@ function info_init = get_init_info(problem_name)
         info_init{21} = 0;
     end
     try
-        H = p.Hcub(p.x0);
-        if ~isempty(H)
+        J = p.jceq(p.x0);
+        if ~isempty(J)
             info_init{22} = 1;
         else
             info_init{22} = 0;
@@ -386,7 +387,7 @@ function info_init = get_init_info(problem_name)
         info_init{22} = 0;
     end
     try
-        H = p.Hceq(p.x0);
+        H = p.hcub(p.x0);
         if ~isempty(H)
             info_init{23} = 1;
         else
@@ -394,6 +395,16 @@ function info_init = get_init_info(problem_name)
         end
     catch
         info_init{23} = 0;
+    end
+    try
+        H = p.hceq(p.x0);
+        if ~isempty(H)
+            info_init{24} = 1;
+        else
+            info_init{24} = 0;
+        end
+    catch
+        info_init{24} = 0;
     end
 end
 
