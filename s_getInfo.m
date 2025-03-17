@@ -19,8 +19,11 @@ function s_getInfo()
     problem_exclude = {'SPARCO10LS.m'; 'SPARCO10.m'; 'SPARCO11LS.m'; 'SPARCO11.m'; 'SPARCO12LS.m'; 'SPARCO12.m'; 'SPARCO2LS.m'; 'SPARCO2.m'; 'SPARCO3LS.m'; 'SPARCO3.m'; 'SPARCO5LS.m'; 'SPARCO5.m'; 'SPARCO7LS.m'; 'SPARCO7.m'; 'SPARCO8LS.m'; 'SPARCO8.m'; 'SPARCO9LS.m'; 'SPARCO9.m'; 'ROSSIMP3_mp.m'};
     problem_names = setdiff(problem_names, problem_exclude);
 
-    % List all the known feasible problems
-    feasibility_list = {};
+    % List all known feasibility problems
+    known_feasibility = {};
+
+    % To store all the feasibility problems including the known ones and the new ones
+    feasibility = {};
 
     % Find problems that are parametric
     path_file = [current_path, '/list_of_parametric_problems_with_parameters.txt'];
@@ -60,7 +63,7 @@ function s_getInfo()
     saving_path = current_path;
 
     % Initialize the structure to store data
-    probinfo = cell(length(problem_names) + 1, 38);
+    probinfo = cell(length(problem_names) + 1, 39);
     probinfo{1, 1} = 'name';
     probinfo{1, 2} = 'p_type';
     probinfo{1, 3} = 'x_type';
@@ -119,7 +122,7 @@ function s_getInfo()
 
         try
             % Use parfeval to load the problem. If it takes too long, then cancel it
-            f = parfeval(pool, @get_init_info, 1, problem_name);
+            f = parfeval(pool, @get_init_info, 1, problem_name, known_feasibility);
             [idx, info_init] = fetchNext(f, timeout);
             if isempty(idx)
                 cancel(f);
@@ -139,18 +142,37 @@ function s_getInfo()
         % Record the information
         tmp(1:24) = info_init;
 
+        if info_init{18} == 1
+            feasibility = [feasibility, problem_name];
+        end
+
         % argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s
         [tmp{25}, tmp{26}, tmp{27}, tmp{28}, tmp{29}, tmp{30}, tmp{31}, tmp{32}, tmp{33}, tmp{34}, tmp{35}, tmp{36}, tmp{37}, tmp{38}, tmp{39}] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins);
 
         probinfo(i_problem, :) = tmp;
     end
 
+    % Save 'feasibility' to txt file in the format of a cell array in MATLAB so that we can copy and paste it to MATLAB
+    fid = fopen([saving_path, '/feasibility.txt'], 'w');
+    if fid == -1
+        error('Cannot open file: %s', 'feasibility.txt');
+    end
+    fprintf(fid, '{');
+    for i = 1:length(feasibility)
+        fprintf(fid, '''%s''', feasibility{i});
+        if i < length(feasibility)
+            fprintf(fid, ', ');
+        end
+    end
+    fprintf(fid, '}');
+    fclose(fid);
+
     % Save the data to a .mat file in the saving path
     save([saving_path, '/probinfo.mat'], 'probinfo');
     % Save the data to a .csv file in the saving path
     % Convert all the elements in probinfo(:, end-3:) to strings
     for i_row = 2:size(probinfo, 1)
-        for i_col = 24:38
+        for i_col = 25:39
             % NOTE: we need to convert the cell array to a string. If we do not do this, the cell array will be saved as a cell array in the .csv file (multiple columns)
             if isnumeric(probinfo{i_row, i_col})
                 probinfo{i_row, i_col} = num2str(probinfo{i_row, i_col});
@@ -202,11 +224,11 @@ function s_getInfo()
     diary off;
 end
 
-function info_init = get_init_info(problem_name)
+function info_init = get_init_info(problem_name, known_feasibility)
 
     % Note that, since we are loading problems from S2MPJ, we should pay attention that problems in S2MPJ need to be 'set up'. Thus, if you set up one problem inside one pool, you will fail to use its methods in another pool!
 
-    info_init = cell(1, 23);
+    info_init = cell(1, 24);
     info_init{1} = problem_name;
 
     % Load the problem
@@ -334,7 +356,7 @@ function info_init = get_init_info(problem_name)
     % f0 and isfeasibility
     try
         info_init{17} = p.fun(p.x0);
-        if isempty(info_init{17})
+        if isempty(info_init{17}) || ismember(problem_name, known_feasibility)
             info_init{17} = 0;
             info_init{18} = 1;
         else
