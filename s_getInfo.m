@@ -67,8 +67,8 @@ function s_getInfo()
     % Initialize the structure to store data
     probinfo = cell(length(problem_names) + 1, 39);
     probinfo{1, 1} = 'name';
-    probinfo{1, 2} = 'p_type';
-    probinfo{1, 3} = 'x_type';
+    probinfo{1, 2} = 'ptype';
+    probinfo{1, 3} = 'xtype';
     probinfo{1, 4} = 'dim';
     probinfo{1, 5} = 'mb';
     probinfo{1, 6} = 'ml';
@@ -237,7 +237,7 @@ function info_init = get_init_info(problem_name, known_feasibility)
     p = s_load(problem_name);
 
     try
-        switch p.p_type
+        switch p.ptype
             case 'nonlinearly constrained'
                 info_init{2} = 'n';
             case 'linearly constrained'
@@ -252,7 +252,7 @@ function info_init = get_init_info(problem_name, known_feasibility)
     end
 
     try
-        switch p.x_type
+        switch p.xtype
             case 'real'
                 info_init{3} = 'r';
             case 'integer'

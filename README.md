@@ -2,8 +2,8 @@ This repository is used to collect useful information about ``S2MPJ``, which is 
 
 Specifically, we will generate an Excel file containing following information for each problem in ``S2MPJ``:
 - ``name``: the name of the problem
-- ``p_type``: the type of the problem, which can be ``u`` (unconstrained), ``b`` (bound-constrained), ``l`` (linearly constrained), ``n`` (nonlinearly constrained)
-- ``x_type``: the type of the variables, which can be ``r`` (real), ``i`` (integer), ``b`` (binary)
+- ``ptype``: the type of the problem, which can be ``u`` (unconstrained), ``b`` (bound-constrained), ``l`` (linearly constrained), ``n`` (nonlinearly constrained)
+- ``xtype``: the type of the variables, which can be ``r`` (real), ``i`` (integer), ``b`` (binary)
 - ``dim``: the dimension of the problem
 - ``mb``: the total number of bound constraints
 - ``ml``: the number of lower bound constraints
