@@ -234,7 +234,7 @@ function info_init = get_init_info(problem_name, known_feasibility)
     info_init{1} = problem_name;
 
     % Load the problem
-    p = s_load(problem_name);
+    p = s2mpj_load(problem_name);
 
     try
         switch p.ptype
@@ -440,9 +440,9 @@ function info_arg = get_arg_info(problem_name, arg)
 
     % Load the problem
     if iscell(arg)
-        p = s_load(problem_name, arg{:});
+        p = s2mpj_load(problem_name, arg{:});
     else
-        p = s_load(problem_name, arg);
+        p = s2mpj_load(problem_name, arg);
     end
 
     info_arg.n = p.n;
