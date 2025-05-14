@@ -73,9 +73,9 @@ function s_getInfo()
     probinfo{1, 5} = 'mb';
     probinfo{1, 6} = 'ml';
     probinfo{1, 7} = 'mu';
-    probinfo{1, 8} = 'm_con';
-    probinfo{1, 9} = 'm_linear';
-    probinfo{1, 10} = 'm_nonlinear';
+    probinfo{1, 8} = 'mcon';
+    probinfo{1, 9} = 'mlcon';
+    probinfo{1, 10} = 'mnlcon';
     probinfo{1, 11} = 'm_ub';
     probinfo{1, 12} = 'm_eq';
     probinfo{1, 13} = 'm_linear_ub';
@@ -95,9 +95,9 @@ function s_getInfo()
     probinfo{1, 27} = 'mbs';
     probinfo{1, 28} = 'mls';
     probinfo{1, 29} = 'mus';
-    probinfo{1, 30} = 'm_cons';
-    probinfo{1, 31} = 'm_linears';
-    probinfo{1, 32} = 'm_nonlinears';
+    probinfo{1, 30} = 'mcons';
+    probinfo{1, 31} = 'mlcons';
+    probinfo{1, 32} = 'mnlcons';
     probinfo{1, 33} = 'm_ubs';
     probinfo{1, 34} = 'm_eqs';
     probinfo{1, 35} = 'm_linear_ubs';
@@ -148,7 +148,7 @@ function s_getInfo()
             feasibility = [feasibility, problem_name];
         end
 
-        % argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s
+        % argins, dims, mbs, mls, mus, mcons, mlcons, mnlcons, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s
         [tmp{25}, tmp{26}, tmp{27}, tmp{28}, tmp{29}, tmp{30}, tmp{31}, tmp{32}, tmp{33}, tmp{34}, tmp{35}, tmp{36}, tmp{37}, tmp{38}, tmp{39}] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins);
 
         probinfo(i_problem, :) = tmp;
@@ -237,16 +237,7 @@ function info_init = get_init_info(problem_name, known_feasibility)
     p = s2mpj_load(problem_name);
 
     try
-        switch p.ptype
-            case 'nonlinearly constrained'
-                info_init{2} = 'n';
-            case 'linearly constrained'
-                info_init{2} = 'l';
-            case 'bound-constrained'
-                info_init{2} = 'b';
-            case 'unconstrained'
-                info_init{2} = 'u';
-        end
+        info_init{2} = p.ptype;
     catch
         info_init{2} = 'unknown';
     end
@@ -261,7 +252,8 @@ function info_init = get_init_info(problem_name, known_feasibility)
                 info_init{3} = 'b'; 
         end
     catch
-        info_init{3} = 'unknown';
+        % All problems in S2MPJ are real-valued problems (if we remember correctly).
+        info_init{3} = 'r';
     end
 
     % dim
@@ -287,7 +279,7 @@ function info_init = get_init_info(problem_name, known_feasibility)
 
     % mb
     try
-        info_init{5} = info_init{6} + info_init{7};
+        info_init{5} = p.mb;
     catch
         info_init{5} = 'unknown';
     end
@@ -320,23 +312,23 @@ function info_init = get_init_info(problem_name, known_feasibility)
         info_init{16} = 'unknown';
     end
 
-    % m_con
+    % mcon
     try
-        info_init{8} = p.m_linear_eq + p.m_linear_ub + p.m_nonlinear_eq + p.m_nonlinear_ub;
+        info_init{8} = p.mcon;
     catch
         info_init{8} = 'unknown';
     end
 
-    % m_linear
+    % mlcon
     try
-        info_init{9} = p.m_linear_eq + p.m_linear_ub;
+        info_init{9} = p.mlcon;
     catch
         info_init{9} = 'unknown';
     end
 
-    % m_nonlinear
+    % mnlcon
     try
-        info_init{10} = p.m_nonlinear_ub + p.m_nonlinear_eq;
+        info_init{10} = p.mnlcon;
     catch
         info_init{10} = 'unknown';
     end
@@ -452,17 +444,16 @@ function info_arg = get_arg_info(problem_name, arg)
     info_arg.m_linear_eq = p.m_linear_eq;
     info_arg.m_nonlinear_ub = p.m_nonlinear_ub;
     info_arg.m_nonlinear_eq = p.m_nonlinear_eq;
-    info_arg.mb = info_arg.ml + info_arg.mu;
-    info_arg.m_con = p.m_linear_eq + p.m_linear_ub + p.m_nonlinear_eq + p.m_nonlinear_ub;
-    info_arg.m_linear = p.m_linear_eq + p.m_linear_ub;
-    info_arg.m_nonlinear = p.m_nonlinear_ub + p.m_nonlinear_eq;
+    info_arg.mb = p.mb;
+    info_arg.mcon = p.mcon;
+    info_arg.mlcon = p.mlcon;
+    info_arg.mnlcon = p.mnlcon;
     info_arg.m_ub = p.m_linear_ub + p.m_nonlinear_ub;
     info_arg.m_eq = p.m_linear_eq + p.m_nonlinear_eq;
     info_arg.f0 = p.fun(p.x0);
-
 end
 
-function [argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins)
+function [argins, dims, mbs, mls, mus, mcons, mlcons, mnlcons, m_ubs, m_eqs, m_linear_ubs, m_linear_eqs, m_nonlinear_ubs, m_nonlinear_eqs, f0s] = check_args(pool, timeout, problem_name, para_problem_names, problem_argins)
     % Try to find all possible dimensions of each problem in S2MPJ
 
     argins = [];
@@ -470,9 +461,9 @@ function [argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m
     mbs = [];
     mls = [];
     mus = [];
-    m_cons = [];
-    m_linears = [];
-    m_nonlinears = [];
+    mcons = [];
+    mlcons = [];
+    mnlcons = [];
     m_ubs = [];
     m_eqs = [];
     m_linear_ubs = [];
@@ -540,9 +531,9 @@ function [argins, dims, mbs, mls, mus, m_cons, m_linears, m_nonlinears, m_ubs, m
             mbs = [mbs, info_arg.mb];
             mls = [mls, info_arg.ml];
             mus = [mus, info_arg.mu];
-            m_cons = [m_cons, info_arg.m_con];
-            m_linears = [m_linears, info_arg.m_linear];
-            m_nonlinears = [m_nonlinears, info_arg.m_nonlinear];
+            mcons = [mcons, info_arg.mcon];
+            mlcons = [mlcons, info_arg.mlcon];
+            mnlcons = [mnlcons, info_arg.mnlcon];
             m_ubs = [m_ubs, info_arg.m_ub];
             m_eqs = [m_eqs, info_arg.m_eq];
             m_linear_ubs = [m_linear_ubs, info_arg.m_linear_ub];

@@ -8,9 +8,9 @@ Specifically, we will generate an Excel file containing following information fo
 - ``mb``: the total number of bound constraints
 - ``ml``: the number of lower bound constraints
 - ``mu``: the number of upper bound constraints
-- ``m_con``: the total number of linear and nonlinear constraints
-- ``m_linear``: the total number of linear constraints
-- ``m_nonlinear``: the total number of nonlinear constraints
+- ``mcon``: the total number of linear and nonlinear constraints
+- ``mlcon``: the total number of linear constraints
+- ``mnlcon``: the total number of nonlinear constraints
 - ``m_ub``: the number of linear and nonlinear inequality constraints
 - ``m_eq``: the number of linear and nonlinear equality constraints
 - ``m_linear_ub``: the number of linear inequality constraints
@@ -29,9 +29,9 @@ Specifically, we will generate an Excel file containing following information fo
 - ``mbs``: all the possible number of bound constraints of the parametrized problem of S2MPJ after passing the extra arguments.
 - ``mls``: all the possible number of lower bound constraints of the parametrized problem of S2MPJ after passing the extra arguments.
 - ``mus``: all the possible number of upper bound constraints of the parametrized problem of S2MPJ after passing the extra arguments.
-- ``m_cons``: all the possible number of linear and nonlinear constraints of the parametrized problem of S2MPJ after passing the extra arguments.
-- ``m_linears``: all the possible number of linear constraints of the parametrized problem of S2MPJ after passing the extra arguments.
-- ``m_nonlinears``: all the possible number of nonlinear constraints of the parametrized problem of S2MPJ after passing the extra arguments.
+- ``mcons``: all the possible number of linear and nonlinear constraints of the parametrized problem of S2MPJ after passing the extra arguments.
+- ``mlcons``: all the possible number of linear constraints of the parametrized problem of S2MPJ after passing the extra arguments.
+- ``mnlcons``: all the possible number of nonlinear constraints of the parametrized problem of S2MPJ after passing the extra arguments.
 - ``m_ubs``: all the possible number of linear and nonlinear inequality constraints of the parametrized problem of S2MPJ after passing the extra arguments.
 - ``m_eqs``: all the possible number of linear and nonlinear equality constraints of the parametrized problem of S2MPJ after passing the extra arguments.
 - ``m_linear_ubs``: all the possible number of linear inequality constraints of the parametrized problem of S2MPJ after passing the extra arguments.
