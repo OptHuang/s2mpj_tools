@@ -63,3 +63,4 @@ jobs:
             probinfo.mat
             probinfo.txt
             feasibility.txt
+            log.txt

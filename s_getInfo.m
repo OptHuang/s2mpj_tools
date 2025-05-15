@@ -243,14 +243,7 @@ function info_init = get_init_info(problem_name, known_feasibility)
     end
 
     try
-        switch p.xtype
-            case 'real'
-                info_init{3} = 'r';
-            case 'integer'
-                info_init{3} = 'i';
-            case 'binary'
-                info_init{3} = 'b'; 
-        end
+        info_init{3} = p.xtype;
     catch
         % All problems in S2MPJ are real-valued problems (if we remember correctly).
         info_init{3} = 'r';
