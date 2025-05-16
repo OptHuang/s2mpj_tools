@@ -27,6 +27,9 @@ function s_getInfo()
     % To store all the feasibility problems including the known ones and the new ones
     feasibility = {};
 
+    % To store all the 'time out' problems
+    timeout_problems = {};
+
     % Find problems that are parametric
     path_file = [current_path, '/list_of_parametric_problems_with_parameters.txt'];
     fid = fopen(path_file, 'r');
@@ -128,9 +131,9 @@ function s_getInfo()
             [idx, info_init] = fetchNext(f, timeout);
             if isempty(idx)
                 cancel(f);
-                tmp{1} = [problem_name, ' (timeout)'];
+                timeout_problems = [timeout_problems, problem_name];
                 fprintf('Timeout loading problem %i: %s\n', i_problem - 1, problem_name);
-                probinfo(i_problem, :) = tmp;
+                probinfo(i_problem, :) = [];
                 continue
             end
             fprintf('Problem %s loaded successfully\n\n', problem_name);
@@ -163,6 +166,21 @@ function s_getInfo()
     for i = 1:length(feasibility)
         fprintf(fid, '''%s''', feasibility{i});
         if i < length(feasibility)
+            fprintf(fid, ', ');
+        end
+    end
+    fprintf(fid, '}');
+    fclose(fid);
+
+    % Save 'timeout_problems' to txt file in the format of a cell array in MATLAB so that we can copy and paste it to MATLAB
+    fid = fopen([saving_path, '/timeout_problems.txt'], 'w');
+    if fid == -1
+        error('Cannot open file: %s', 'timeout_problems.txt');
+    end
+    fprintf(fid, '{');
+    for i = 1:length(timeout_problems)
+        fprintf(fid, '''%s''', timeout_problems{i});
+        if i < length(timeout_problems)
             fprintf(fid, ', ');
         end
     end
