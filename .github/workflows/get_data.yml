@@ -6,7 +6,7 @@ name: Generate data
 # 3. Go to optiprofiler directory and run 'setup' in matlab command line
 # 4. Go to this repository root and run python script 's_getDims.py'
 # 5. Run in matlab command line 's_getInfo'
-# 6. Upload 'probinfo.csv', 'probinfo.mat','probinfo.txt' to artifacts
+# 6. Upload 'probinfo.csv', 'probinfo.mat','probinfo.txt', 'feasibility.txt', and 'log.txt' as artifacts
 
 on:
   push:
