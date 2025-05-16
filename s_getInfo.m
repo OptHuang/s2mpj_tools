@@ -2,7 +2,7 @@ function s_getInfo()
 %S_GETINFO Get information about all problems in the problem set "S2MPJ".
 
     % Set the timeout (seconds) for each problem to be loaded
-    timeout = 300;
+    timeout = 50;
 
     % Add paths (the parent directory of the current directory)
     current_path = fileparts(mfilename('fullpath'));
@@ -142,7 +142,6 @@ function s_getInfo()
         end
 
         % Record the information
-        disp(info_init);
         tmp(1:24) = info_init;
 
         if info_init{18} == 1

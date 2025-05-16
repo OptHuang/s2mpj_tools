@@ -15,8 +15,10 @@ on:
 
 jobs:
   build:
-    runs-on: self-hosted
-    timeout-minutes: 1440
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    # runs-on: self-hosted
+    # timeout-minutes: 1440
     
     steps:
       - name: Checkout repository
