@@ -157,6 +157,9 @@ function s_getInfo()
         probinfo(i_problem, :) = tmp;
     end
 
+    % Remove the empty rows
+    probinfo = probinfo(~cellfun('isempty', probinfo(:, 1)), :);
+
     % Save 'feasibility' to txt file in the format of a cell array in MATLAB so that we can copy and paste it to MATLAB
     fid = fopen([saving_path, '/feasibility.txt'], 'w');
     if fid == -1
