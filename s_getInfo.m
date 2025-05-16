@@ -122,29 +122,27 @@ function s_getInfo()
         % Try to load the problem and ignore all the errors and messages
         fprintf('\nLoading problem %i: %s\n', i_problem - 1, problem_name);
 
-        % try
-        %     % Use parfeval to load the problem. If it takes too long, then cancel it
-        %     f = parfeval(pool, @get_init_info, 1, problem_name, known_feasibility);
-        %     [idx, info_init] = fetchNext(f, timeout);
-        %     if isempty(idx)
-        %         cancel(f);
-        %         tmp{1} = [problem_name, ' (timeout)'];
-        %         fprintf('Timeout loading problem %i: %s\n', i_problem - 1, problem_name);
-        %         probinfo(i_problem, :) = tmp;
-        %         continue
-        %     end
-        %     fprintf('Problem %s loaded successfully\n\n', problem_name);
-        % catch
-        %     tmp{1} = [problem_name, ' (error loading)'];
-        %     fprintf('Error loading problem %i: %s\n', i_problem - 1, problem_name);
-        %     probinfo(i_problem, :) = tmp;
-        %     continue
-        % end
-
-        info_init = get_init_info(problem_name, known_feasibility);
-
+        try
+            % Use parfeval to load the problem. If it takes too long, then cancel it
+            f = parfeval(pool, @get_init_info, 1, problem_name, known_feasibility);
+            [idx, info_init] = fetchNext(f, timeout);
+            if isempty(idx)
+                cancel(f);
+                tmp{1} = [problem_name, ' (timeout)'];
+                fprintf('Timeout loading problem %i: %s\n', i_problem - 1, problem_name);
+                probinfo(i_problem, :) = tmp;
+                continue
+            end
+            fprintf('Problem %s loaded successfully\n\n', problem_name);
+        catch
+            tmp{1} = [problem_name, ' (error loading)'];
+            fprintf('Error loading problem %i: %s\n', i_problem - 1, problem_name);
+            probinfo(i_problem, :) = tmp;
+            continue
+        end
 
         % Record the information
+        disp(info_init);
         tmp(1:24) = info_init;
 
         if info_init{18} == 1
@@ -238,10 +236,6 @@ function info_init = get_init_info(problem_name, known_feasibility)
 
     % Load the problem
     p = s2mpj_load(problem_name);
-    fprintf('%s', p.name);
-    fprintf('\n');
-    fprintf('%s', p.ptype);
-    fprintf('\n');
 
     try
         info_init{2} = p.ptype;
