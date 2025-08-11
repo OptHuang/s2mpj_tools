@@ -31,7 +31,7 @@ function s_getInfo()
     timeout_problems = {};
 
     % Find problems that are parametric
-    path_file = [current_path, '/list_of_parametric_problems_with_parameters.txt'];
+    path_file = [current_path, '/list_of_parametric_problems_with_parameters_matlab.txt'];
     fid = fopen(path_file, 'r');
     if fid == -1
         error('Cannot open file: %s', path_file);
@@ -112,7 +112,7 @@ function s_getInfo()
     pool = gcp();
 
     % Record the log
-    diary([saving_path, '/log.txt']);
+    diary([saving_path, '/log_matlab.txt']);
 
     for i_problem = 2:length(problem_names) + 1
 
@@ -161,9 +161,9 @@ function s_getInfo()
     probinfo = probinfo(~cellfun('isempty', probinfo(:, 1)), :);
 
     % Save 'feasibility' to txt file in the format of a cell array in MATLAB so that we can copy and paste it to MATLAB
-    fid = fopen([saving_path, '/feasibility.txt'], 'w');
+    fid = fopen([saving_path, '/feasibility_matlab.txt'], 'w');
     if fid == -1
-        error('Cannot open file: %s', 'feasibility.txt');
+        error('Cannot open file: %s', 'feasibility_matlab.txt');
     end
     fprintf(fid, '{');
     for i = 1:length(feasibility)
@@ -176,9 +176,9 @@ function s_getInfo()
     fclose(fid);
 
     % Save 'timeout_problems' to txt file in the format of a cell array in MATLAB so that we can copy and paste it to MATLAB
-    fid = fopen([saving_path, '/timeout_problems.txt'], 'w');
+    fid = fopen([saving_path, '/timeout_problems_matlab.txt'], 'w');
     if fid == -1
-        error('Cannot open file: %s', 'timeout_problems.txt');
+        error('Cannot open file: %s', 'timeout_problems_matlab.txt');
     end
     fprintf(fid, '{');
     for i = 1:length(timeout_problems)
@@ -191,7 +191,7 @@ function s_getInfo()
     fclose(fid);
 
     % Save the data to a .mat file in the saving path
-    save([saving_path, '/probinfo.mat'], 'probinfo');
+    save([saving_path, '/probinfo_matlab.mat'], 'probinfo');
     % Save the data to a .csv file in the saving path
     % Convert all the elements in probinfo(:, end-3:) to strings
     for i_row = 2:size(probinfo, 1)
@@ -211,11 +211,11 @@ function s_getInfo()
         end
     end
     T = cell2table(probinfo(2:end, :), 'VariableNames', probinfo(1, :));
-    writetable(T, [saving_path, '/probinfo.csv']);
+    writetable(T, [saving_path, '/probinfo_matlab.csv']);
     % Save the data to a .txt file in the saving path
-    fid = fopen([saving_path, '/probinfo.txt'], 'w');
+    fid = fopen([saving_path, '/probinfo_matlab.txt'], 'w');
     if fid == -1
-        error('Cannot open file: %s', 'probinfo.txt');
+        error('Cannot open file: %s', 'probinfo_matlab.txt');
     end
     for i_row = 1:size(probinfo, 1)
         for i_col = 1:size(probinfo, 2)
@@ -364,7 +364,7 @@ function info_init = get_init_info(problem_name, known_feasibility)
     % f0 and isfeasibility
     try
         info_init{17} = p.fun(p.x0);
-        if isempty(info_init{17}) || ismember(problem_name, known_feasibility)
+        if isempty(info_init{17}) || isnan(info_init{17}) || ismember(problem_name, known_feasibility)
             info_init{17} = 0;
             info_init{18} = 1;
         else
