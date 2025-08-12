@@ -150,12 +150,12 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
     if problem_name in known_feasibility:
         info_single['isfeasibility'] = 1
         info_single['f0'] = 0
-        info_single['isgrad'] = 0
-        info_single['ishess'] = 0
         feasibility.append(problem_name)
     else:
         try:
-            f = p.fun(p.x0)
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(p.fun, p.x0)
+                f = future.result(timeout=timeout)
             if np.size(f) == 0 or np.isnan(f) or problem_name in known_feasibility:
                 info_single['f0'] = 0
                 info_single['isfeasibility'] = 1
@@ -168,8 +168,15 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             info_single['f0'] = 0
             info_single['isfeasibility'] = 1
             feasibility.append(problem_name)
+    
+    if problem_name in feasibility:
+        info_single['isgrad'] = 1
+        info_single['ishess'] = 1
+    else:
         try:
-            g = p.grad(p.x0)
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(p.grad, p.x0)
+                g = future.result(timeout=timeout)
             if g.size == 0:
                 info_single['isgrad'] = 0
             else:
@@ -178,7 +185,9 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             print(f"Error while evaluating gradient for {problem_name}: {e}")
             info_single['isgrad'] = 0
         try:
-            h = p.hess(p.x0)
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(p.hess, p.x0)
+                h = future.result(timeout=timeout)
             if h.size == 0:
                 info_single['ishess'] = 0
             else:
@@ -188,7 +197,9 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             info_single['ishess'] = 0
     
     try:
-        jc = p.jcub(p.x0)
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(p.jcub, p.x0)
+            jc = future.result(timeout=timeout)
         if jc.size == 0:
             info_single['isjcub'] = 0
         else:
@@ -198,7 +209,9 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['isjcub'] = 0
     
     try:
-        jc = p.jceq(p.x0)
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(p.jceq, p.x0)
+            jc = future.result(timeout=timeout)
         if jc.size == 0:
             info_single['isjceq'] = 0
         else:
@@ -208,7 +221,9 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['isjceq'] = 0
     
     try:
-        hc = p.hcub(p.x0)
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(p.hcub, p.x0)
+            hc = future.result(timeout=timeout)
         if len(hc) == 0:
             info_single['ishcub'] = 0
         else:
@@ -218,7 +233,9 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['ishcub'] = 0
     
     try:
-        hc = p.hceq(p.x0)
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(p.hceq, p.x0)
+            hc = future.result(timeout=timeout)
         if len(hc) == 0:
             info_single['ishceq'] = 0
         else:
@@ -244,13 +261,8 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
     else:
         fixed_argins = []
         variable_argins = problem_argins
-    
-    if fixed_argins:
-        info_single['argins'] = ''.join(['{' + str(fa) + '}' for fa in fixed_argins])
-        info_single['argins'] += '{' + ' '.join(str(arg) for arg in variable_argins) + '}'
-    else:
-        info_single['argins'] = ' '.join(str(arg) for arg in variable_argins)
 
+    successful_args = []
     for arg in variable_argins:
         print(f"Processing argument: {arg} for problem: {problem_name}")
         try:
@@ -263,6 +275,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             timeout_problems.append(problem_name + f" with arg {arg}")
             continue
 
+        successful_args.append(arg)
         info_single['dims'] += str(p.n) + ' '
         info_single['mbs'] += str(p.mb) + ' '
         info_single['mls'] += str(sum(p.xl > -np.inf)) + ' '
@@ -289,6 +302,13 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             except Exception as e:
                 print(f"Error while evaluating function for {problem_name} with arguments {fixed_argins + [arg]}: {e}")
                 info_single['f0s'] += '0 '
+
+    if fixed_argins:
+        info_single['argins'] = ''.join(['{' + str(fa) + '}' for fa in fixed_argins])
+        info_single['argins'] += '{' + ' '.join(str(arg) for arg in successful_args) + '}'
+    else:
+        info_single['argins'] = ' '.join(str(arg) for arg in successful_args)
+
     info_single['dims'] = info_single['dims'].strip()
     info_single['mbs'] = info_single['mbs'].strip()
     info_single['mls'] = info_single['mls'].strip()
