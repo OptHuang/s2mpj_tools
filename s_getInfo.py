@@ -57,9 +57,22 @@ with open(filename, 'r') as file:
 
 saving_path = cwd
 
+# Define the class logger
+class Logger(object):
+    def __init__(self, logfile):
+        self.terminal = sys.__stdout__
+        self.log = logfile
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
 # Record the log from terminal
 log_file = open(os.path.join(saving_path, 'log_python.txt'), 'w')
-sys.stdout = log_file
+sys.stdout = Logger(log_file)
+sys.stderr = Logger(log_file)
 
 # Define a function to get information about a problem
 def get_problem_info(problem_name, known_feasibility, problem_argins=None):
@@ -313,10 +326,10 @@ timeout_file = os.path.join(saving_path, 'timeout_problems_python.txt')
 with open(timeout_file, 'w') as f:
     f.write(' '.join(timeout_problems))
 
+print("Script completed successfully.")
+
 # Close the log file
 log_file.close()
 
 sys.stdout = sys.__stdout__  # Reset stdout to default
 sys.stderr = sys.__stderr__  # Reset stderr to default
-
-print("Script completed successfully.")
