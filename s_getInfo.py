@@ -76,6 +76,9 @@ sys.stderr = Logger(log_file)
 
 # Define a function to get information about a problem
 def get_problem_info(problem_name, known_feasibility, problem_argins=None):
+
+    print(f"Processing problem: {problem_name}")
+
     info_single = {
         'problem_name': problem_name,
         'ptype': 'unknown',
@@ -249,6 +252,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['argins'] = ' '.join(str(arg) for arg in variable_argins)
 
     for arg in variable_argins:
+        print(f"Processing argument: {arg} for problem: {problem_name}")
         try:
             with ThreadPoolExecutor() as executor:
                 args = fixed_argins + [arg]
