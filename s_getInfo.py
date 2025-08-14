@@ -64,7 +64,10 @@ class Logger(object):
         self.log = logfile
     def write(self, message):
         self.terminal.write(message)
-        self.log.write(message)
+        try:
+            self.log.write(message)
+        except Exception as e:
+            self.terminal.write(f"[Logger Error] {e}\n")
     def flush(self):
         self.terminal.flush()
         self.log.flush()
@@ -340,6 +343,9 @@ for name in problem_names:
         args = None
     info = get_problem_info(name, known_feasibility, args)
     results.append(info)
+    sys.stdout.flush()
+    sys.stderr.flush()
+
 df = pd.DataFrame(results)
 df.to_csv(os.path.join(saving_path, 'probinfo_python.csv'), index=False)
 
