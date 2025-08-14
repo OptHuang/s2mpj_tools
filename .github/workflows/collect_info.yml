@@ -1,4 +1,4 @@
-name: MATLAB generate data
+name: Collect Info
 
 # This workflow do the following:
 # 1. Checkout the repository

@@ -126,6 +126,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
     except TimeoutError:
         print(f"Timeout while loading problem {problem_name}.")
         timeout_problems.append(problem_name)
+        print(f"Skipping problem {problem_name} due to timeout.")
         return info_single
 
     try:
@@ -245,10 +246,11 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['ishceq'] = 0
 
     if problem_argins is None:
+        print(f"Finished processing problem {problem_name} without parameters.")
         return info_single
 
     # Collect additional information if the problem is parametric
-
+    print(f"Processing parametric problem: {problem_name} with arguments {problem_argins}")
     # First handle two special cases:
     # NUFFIELD,{5.0}{10,20,30,40,100}
     # TRAINF,{1.5}{2}{11,51,101,201,501}
@@ -324,6 +326,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
     info_single['m_nonlinear_eqs'] = info_single['m_nonlinear_eqs'].strip()
     info_single['f0s'] = info_single['f0s'].strip()
 
+    print(f"Finished processing problem {problem_name} with parameters.")
     return info_single
 
 
