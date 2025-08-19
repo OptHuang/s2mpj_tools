@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from multiprocessing import Process, Queue
+import signal
 
 # Add optiprofiler to the system path
 import os
@@ -13,7 +15,7 @@ sys.path.append(os.path.join(cwd, 'optiprofiler', 'problems'))
 from problems.s2mpj.s2mpj_tools import s2mpj_load
 
 # Set the timeout (seconds) for each problem to be loaded
-timeout = 10
+timeout = 50
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 filename = os.path.join(cwd, 'optiprofiler', 'problems', 's2mpj', 'src', 'list_of_python_problems')
@@ -77,6 +79,19 @@ log_file = open(os.path.join(saving_path, 'log_python.txt'), 'w')
 sys.stdout = Logger(log_file)
 sys.stderr = Logger(log_file)
 
+def run_with_timeout(func, args, timeout_seconds):
+    def handler(signum, frame):
+        raise TimeoutError(f"Function timed out after {timeout_seconds} seconds")
+
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(timeout_seconds)
+    
+    try:
+        result = func(*args) if args else func()
+        return result
+    finally:
+        signal.alarm(0)
+
 # Define a function to get information about a problem
 def get_problem_info(problem_name, known_feasibility, problem_argins=None):
 
@@ -123,9 +138,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         'm_nonlinear_eqs': '',
         'f0s': ''}
     try:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(s2mpj_load, problem_name)
-            p = future.result(timeout=timeout)
+        p = run_with_timeout(s2mpj_load, (problem_name,), timeout)
     except TimeoutError:
         print(f"Timeout while loading problem {problem_name}.")
         timeout_problems.append(problem_name)
@@ -157,9 +170,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         feasibility.append(problem_name)
     else:
         try:
-            with ThreadPoolExecutor() as executor:
-                future = executor.submit(p.fun, p.x0)
-                f = future.result(timeout=timeout)
+            f = run_with_timeout(p.fun, (p.x0,), timeout)
             if np.size(f) == 0 or np.isnan(f) or problem_name in known_feasibility:
                 info_single['f0'] = 0
                 info_single['isfeasibility'] = 1
@@ -178,9 +189,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['ishess'] = 1
     else:
         try:
-            with ThreadPoolExecutor() as executor:
-                future = executor.submit(p.grad, p.x0)
-                g = future.result(timeout=timeout)
+            g = run_with_timeout(p.grad, (p.x0,), timeout)
             if g.size == 0:
                 info_single['isgrad'] = 0
             else:
@@ -189,9 +198,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             print(f"Error while evaluating gradient for {problem_name}: {e}")
             info_single['isgrad'] = 0
         try:
-            with ThreadPoolExecutor() as executor:
-                future = executor.submit(p.hess, p.x0)
-                h = future.result(timeout=timeout)
+            h = run_with_timeout(p.hess, (p.x0,), timeout)
             if h.size == 0:
                 info_single['ishess'] = 0
             else:
@@ -201,9 +208,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             info_single['ishess'] = 0
     
     try:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(p.jcub, p.x0)
-            jc = future.result(timeout=timeout)
+        jc = run_with_timeout(p.jcub, (p.x0,), timeout)
         if jc.size == 0:
             info_single['isjcub'] = 0
         else:
@@ -213,9 +218,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['isjcub'] = 0
     
     try:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(p.jceq, p.x0)
-            jc = future.result(timeout=timeout)
+        jc = run_with_timeout(p.jceq, (p.x0,), timeout)
         if jc.size == 0:
             info_single['isjceq'] = 0
         else:
@@ -225,9 +228,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['isjceq'] = 0
     
     try:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(p.hcub, p.x0)
-            hc = future.result(timeout=timeout)
+        hc = run_with_timeout(p.hcub, (p.x0,), timeout)
         if len(hc) == 0:
             info_single['ishcub'] = 0
         else:
@@ -237,9 +238,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['ishcub'] = 0
     
     try:
-        with ThreadPoolExecutor() as executor:
-            future = executor.submit(p.hceq, p.x0)
-            hc = future.result(timeout=timeout)
+        hc = run_with_timeout(p.hceq, (p.x0,), timeout)
         if len(hc) == 0:
             info_single['ishceq'] = 0
         else:
@@ -271,10 +270,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
     for arg in variable_argins:
         print(f"Processing argument: {arg} for problem: {problem_name}")
         try:
-            with ThreadPoolExecutor() as executor:
-                args = fixed_argins + [arg]
-                future = executor.submit(s2mpj_load, problem_name, *args)
-                p = future.result(timeout=timeout)
+            p = run_with_timeout(s2mpj_load, (problem_name, *fixed_argins, arg), timeout)
         except TimeoutError:
             print(f"Timeout while loading problem {problem_name} with arguments {fixed_argins + [arg]}.")
             timeout_problems.append(problem_name + f" with arg {arg}")
@@ -332,37 +328,37 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
     print(f"Finished processing problem {problem_name} with parameters.")
     return info_single
 
+if __name__ == "__main__":
+    # Save problem information into a csv file
+    results = []
+    for name in problem_names:
+        if name in para_problem_names:
+            index = para_problem_names.index(name)
+            args = problem_argins[index] if index < len(problem_argins) else []
+        else:
+            args = None
+        info = get_problem_info(name, known_feasibility, args)
+        results.append(info)
+        sys.stdout.flush()
+        sys.stderr.flush()
 
-# Save problem information into a csv file
-results = []
-for name in problem_names:
-    if name in para_problem_names:
-        index = para_problem_names.index(name)
-        args = problem_argins[index] if index < len(problem_argins) else []
-    else:
-        args = None
-    info = get_problem_info(name, known_feasibility, args)
-    results.append(info)
-    sys.stdout.flush()
-    sys.stderr.flush()
+    df = pd.DataFrame(results)
+    df.to_csv(os.path.join(saving_path, 'probinfo_python.csv'), index=False)
 
-df = pd.DataFrame(results)
-df.to_csv(os.path.join(saving_path, 'probinfo_python.csv'), index=False)
+    # Save 'feasibility' to txt file in the one line format with space separated values
+    feasibility_file = os.path.join(saving_path, 'feasibility_python.txt')
+    with open(feasibility_file, 'w') as f:
+        f.write(' '.join(feasibility))
 
-# Save 'feasibility' to txt file in the one line format with space separated values
-feasibility_file = os.path.join(saving_path, 'feasibility_python.txt')
-with open(feasibility_file, 'w') as f:
-    f.write(' '.join(feasibility))
+    # Save 'timeout_problems' to txt file in the one line format with space separated values
+    timeout_file = os.path.join(saving_path, 'timeout_problems_python.txt')
+    with open(timeout_file, 'w') as f:
+        f.write(' '.join(timeout_problems))
 
-# Save 'timeout_problems' to txt file in the one line format with space separated values
-timeout_file = os.path.join(saving_path, 'timeout_problems_python.txt')
-with open(timeout_file, 'w') as f:
-    f.write(' '.join(timeout_problems))
+    print("Script completed successfully.")
 
-print("Script completed successfully.")
+    # Close the log file
+    log_file.close()
 
-# Close the log file
-log_file.close()
-
-sys.stdout = sys.__stdout__  # Reset stdout to default
-sys.stderr = sys.__stderr__  # Reset stderr to default
+    sys.stdout = sys.__stdout__  # Reset stdout to default
+    sys.stderr = sys.__stderr__  # Reset stderr to default
