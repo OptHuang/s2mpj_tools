@@ -266,43 +266,94 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         fixed_argins = []
         variable_argins = problem_argins
 
+    # Define a sub-function to process each argument (so that later we can use the ``run_with_timeout`` function)
+    def process_arg(problem_name, arg, fixed_argins):
+        """处理单个参数值的函数"""
+        try:
+            # 加载问题
+            p = s2mpj_load(problem_name, *fixed_argins, arg)
+            
+            # 收集所有需要的数据
+            result = {}
+            result['n'] = p.n
+            result['mb'] = p.mb
+            result['ml'] = sum(p.xl > -np.inf)
+            result['mu'] = sum(p.xu < np.inf)
+            
+            # 安全地获取可能导致错误的属性
+            try:
+                result['mcon'] = p.mcon
+            except AttributeError as e:
+                if "'Problem' object has no attribute '_m_nonlinear_ub'" in str(e):
+                    # 直接计算 mcon
+                    result['mcon'] = p.mlcon + p.m_nonlinear_ub + p.m_nonlinear_eq
+                else:
+                    raise e
+            
+            result['mlcon'] = p.mlcon
+            
+            try:
+                result['mnlcon'] = p.mnlcon
+            except AttributeError as e:
+                if "'Problem' object has no attribute '_m_nonlinear" in str(e):
+                    # 直接计算 mnlcon
+                    result['mnlcon'] = p.m_nonlinear_ub + p.m_nonlinear_eq
+                else:
+                    raise e
+            
+            result['m_ub'] = p.m_linear_ub + p.m_nonlinear_ub
+            result['m_eq'] = p.m_linear_eq + p.m_nonlinear_eq
+            result['m_linear_ub'] = p.m_linear_ub
+            result['m_linear_eq'] = p.m_linear_eq
+            result['m_nonlinear_ub'] = p.m_nonlinear_ub
+            result['m_nonlinear_eq'] = p.m_nonlinear_eq
+            
+            # 计算函数值
+            if problem_name in known_feasibility:
+                result['f0'] = 0
+            else:
+                f = p.fun(p.x0)
+                if np.size(f) == 0 or np.isnan(f):
+                    result['f0'] = 0
+                else:
+                    result['f0'] = f
+                    
+            return True, arg, result
+        except Exception as e:
+            print(f"Error processing argument {arg} for problem {problem_name}: {e}")
+            return False, arg, None
+
     successful_args = []
     for arg in variable_argins:
         print(f"Processing argument: {arg} for problem: {problem_name}")
         try:
-            p = run_with_timeout(s2mpj_load, (problem_name, *fixed_argins, arg), timeout)
+            success, processed_arg, result = run_with_timeout(process_arg, (problem_name, arg, fixed_argins), timeout)
+            if not success or result is None:
+                print(f"Failed to process argument {arg} for problem {problem_name}")
+                continue
+
+            successful_args.append(processed_arg)
+            info_single['dims'] += str(result['n']) + ' '
+            info_single['mbs'] += str(result['mb']) + ' '
+            info_single['mls'] += str(result['ml']) + ' '
+            info_single['mus'] += str(result['mu']) + ' '
+            info_single['mcons'] += str(result['mcon']) + ' '
+            info_single['mlcons'] += str(result['mlcon']) + ' '
+            info_single['mnlcons'] += str(result['mnlcon']) + ' '
+            info_single['m_ubs'] += str(result['m_ub']) + ' '
+            info_single['m_eqs'] += str(result['m_eq']) + ' '
+            info_single['m_linear_ubs'] += str(result['m_linear_ub']) + ' '
+            info_single['m_linear_eqs'] += str(result['m_linear_eq']) + ' '
+            info_single['m_nonlinear_ubs'] += str(result['m_nonlinear_ub']) + ' '
+            info_single['m_nonlinear_eqs'] += str(result['m_nonlinear_eq']) + ' '
+            info_single['f0s'] += str(result['f0']) + ' '
         except TimeoutError:
-            print(f"Timeout while loading problem {problem_name} with arguments {fixed_argins + [arg]}.")
+            print(f"Timeout while processing problem {problem_name} with argument {arg}.")
             timeout_problems.append(problem_name + f" with arg {arg}")
             continue
-
-        successful_args.append(arg)
-        info_single['dims'] += str(p.n) + ' '
-        info_single['mbs'] += str(p.mb) + ' '
-        info_single['mls'] += str(sum(p.xl > -np.inf)) + ' '
-        info_single['mus'] += str(sum(p.xu < np.inf)) + ' '
-        info_single['mcons'] += str(p.mcon) + ' '
-        info_single['mlcons'] += str(p.mlcon) + ' '
-        info_single['mnlcons'] += str(p.mnlcon) + ' '
-        info_single['m_ubs'] += str(p.m_linear_ub + p.m_nonlinear_ub) + ' '
-        info_single['m_eqs'] += str(p.m_linear_eq + p.m_nonlinear_eq) + ' '
-        info_single['m_linear_ubs'] += str(p.m_linear_ub) + ' '
-        info_single['m_linear_eqs'] += str(p.m_linear_eq) + ' '
-        info_single['m_nonlinear_ubs'] += str(p.m_nonlinear_ub) + ' '
-        info_single['m_nonlinear_eqs'] += str(p.m_nonlinear_eq) + ' '
-        
-        if problem_name in known_feasibility:
-            info_single['f0s'] += '0 '
-        else:
-            try:
-                f = p.fun(p.x0)
-                if np.size(f) == 0 or np.isnan(f):
-                    info_single['f0s'] += '0 '
-                else:
-                    info_single['f0s'] += str(f) + ' '
-            except Exception as e:
-                print(f"Error while evaluating function for {problem_name} with arguments {fixed_argins + [arg]}: {e}")
-                info_single['f0s'] += '0 '
+        except Exception as e:
+            print(f"Error while processing problem {problem_name} with argument {arg}: {e}")
+            continue
 
     if fixed_argins:
         info_single['argins'] = ''.join(['{' + str(fa) + '}' for fa in fixed_argins])
@@ -331,7 +382,11 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
 if __name__ == "__main__":
     # Save problem information into a csv file
     results = []
+    problem_exclude = ['HS67', 'HS68', 'HS69', 'HS85', 'HS88', 'HS89', 'HS90', 'HS91', 'HS92']
     for name in problem_names:
+        if name in problem_exclude:
+            print(f"Skipping excluded problem: {name}")
+            continue
         if name in para_problem_names:
             index = para_problem_names.index(name)
             args = problem_argins[index] if index < len(problem_argins) else []
