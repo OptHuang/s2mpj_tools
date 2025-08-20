@@ -15,7 +15,7 @@ sys.path.append(os.path.join(cwd, 'optiprofiler', 'problems'))
 from problems.s2mpj.s2mpj_tools import s2mpj_load
 
 # Set the timeout (seconds) for each problem to be loaded
-timeout = 30
+timeout = 50
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 filename = os.path.join(cwd, 'optiprofiler', 'problems', 's2mpj', 'src', 'list_of_python_problems')
@@ -33,7 +33,9 @@ problem_exclude = [
 problem_names = [name for name in problem_names if name not in problem_exclude]
 
 # List all known feasibility problems
-known_feasibility = []
+known_feasibility = [
+    'AIRCRFTA', 'ARGAUSS', 'ARGLALE', 'ARGLBLE', 'ARGTRIG', 'ARTIF', 'BAmL1SP', 'BARDNE', 'BEALENE', 'BENNETT5', 'BIGGS6NE', 'BOOTH', 'BOXBOD', 'BRATU2D', 'BRATU2DT', 'BRATU3D', 'BROWNBSNE', 'BROWNDENE', 'BROYDN3D', 'CBRATU2D', 'CBRATU3D', 'CHANDHEQ', 'CHEMRCTA', 'CHWIRUT2', 'CLUSTER', 'COOLHANS', 'CUBENE', 'CYCLIC3', 'CYCLOOCF', 'CYCLOOCT', 'DANIWOOD', 'DANWOOD', 'DECONVBNE', 'DENSCHNBNE', 'DENSCHNDNE', 'DENSCHNFNE', 'DEVGLA1NE', 'DEVGLA2NE', 'DRCAVTY1', 'DRCAVTY2', 'DRCAVTY3', 'ECKERLE4', 'EGGCRATENE', 'EIGENA', 'EIGENB', 'ELATVIDUNE', 'ENGVAL2NE', 'ENSO', 'ERRINROSNE', 'ERRINRSMNE', 'EXP2NE', 'EXTROSNBNE', 'FLOSP2HH', 'FLOSP2HL', 'FLOSP2HM', 'FLOSP2TH', 'FLOSP2TL', 'FLOSP2TM', 'FREURONE', 'GENROSEBNE', 'GOTTFR', 'GROWTH', 'GULFNE', 'HAHN1', 'HATFLDANE', 'HATFLDBNE', 'HATFLDCNE', 'HATFLDDNE', 'HATFLDENE', 'HATFLDFLNE', 'HATFLDF', 'HATFLDG', 'HELIXNE', 'HIMMELBA', 'HIMMELBC', 'HIMMELBD', 'HIMMELBFNE', 'HS1NE', 'HS25NE', 'HS2NE', 'HYDCAR20', 'HYDCAR6', 'HYPCIR', 'INTEGREQ', 'INTEQNE', 'KOEBHELBNE', 'KOWOSBNE', 'KSS', 'LANCZOS1', 'LANCZOS2', 'LANCZOS3', 'LEVYMONE10', 'LEVYMONE5', 'LEVYMONE6', 'LEVYMONE7', 'LEVYMONE8', 'LEVYMONE9', 'LEVYMONE', 'LIARWHDNE', 'LIN', 'LINVERSENE', 'LSC1', 'LSC2', 'LUKSAN11', 'LUKSAN12', 'LUKSAN13', 'LUKSAN14', 'LUKSAN17', 'LUKSAN21', 'LUKSAN22', 'MANCINONE', 'METHANB8', 'METHANL8', 'MEYER3NE', 'MGH09', 'MGH10', 'MISRA1A', 'MISRA1B', 'MISRA1C', 'MISRA1D', 'MODBEALENE', 'MSQRTA', 'MSQRTB', 'MUONSINE', 'n10FOLDTR', 'NELSON', 'NONSCOMPNE', 'NYSTROM5', 'OSBORNE1', 'OSBORNE2', 'OSCIGRNE', 'OSCIPANE', 'PALMER1ANE', 'PALMER1BNE', 'PALMER1ENE', 'PALMER1NE', 'PALMER2ANE', 'PALMER2BNE', 'PALMER2ENE', 'PALMER3ANE', 'PALMER3BNE', 'PALMER3ENE', 'PALMER4ANE', 'PALMER4BNE', 'PALMER4ENE', 'PALMER5ANE', 'PALMER5BNE', 'PALMER5ENE', 'PALMER6ANE', 'PALMER6ENE', 'PALMER7ANE', 'PALMER7ENE', 'PALMER8ANE', 'PALMER8ENE', 'PENLT1NE', 'PENLT2NE', 'POROUS1', 'POROUS2', 'POWELLBS', 'POWELLSQ', 'POWERSUMNE', 'PRICE3NE', 'PRICE4NE', 'QINGNE', 'QR3D', 'RAT42', 'RAT43', 'RECIPE', 'REPEAT', 'RES', 'ROSZMAN1', 'RSNBRNE', 'SANTA', 'SEMICN2U', 'SEMICON1', 'SEMICON2', 'SPECANNE', 'SSBRYBNDNE', 'SSINE', 'THURBER', 'TQUARTICNE', 'VANDERM1', 'VANDERM2', 'VANDERM3', 'VANDERM4', 'VARDIMNE', 'VESUVIA', 'VESUVIO', 'VESUVIOU', 'VIBRBEAMNE', 'WATSONNE', 'WAYSEA1NE', 'WAYSEA2NE', 'YATP1CNE', 'YATP2CNE', 'YFITNE', 'ZANGWIL3'
+]
 
 # To store all the feasibility problems including the known ones and the new ones
 feasibility = []
@@ -385,11 +387,7 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
 if __name__ == "__main__":
     # Save problem information into a csv file
     results = []
-    problem_exclude = ['HS67', 'HS68', 'HS69', 'HS85', 'HS88', 'HS89', 'HS90', 'HS91', 'HS92']
     for name in problem_names:
-        if name in problem_exclude:
-            print(f"Skipping excluded problem: {name}")
-            continue
         if name in para_problem_names:
             index = para_problem_names.index(name)
             args = problem_argins[index] if index < len(problem_argins) else []
@@ -401,7 +399,21 @@ if __name__ == "__main__":
         sys.stderr.flush()
 
     df = pd.DataFrame(results)
-    df.to_csv(os.path.join(saving_path, 'probinfo_python.csv'), index=False)
+
+    def has_unknown_values(row):
+        for value in row:
+            if str(value).strip().lower() == 'unknown':
+                return True
+        return False
+    unknown_mask = df.apply(has_unknown_values, axis=1)
+    if unknown_mask.any():
+        filtered_problems = df.loc[unknown_mask, 'problem_name'].tolist()
+        print(f"Filtered out {len(filtered_problems)} problems with 'unknown' values:")
+        for problem in filtered_problems:
+            print(f"  - {problem}")
+    df_clean = df[~unknown_mask]
+
+    df_clean.to_csv(os.path.join(saving_path, 'probinfo_python.csv'), index=False)
 
     # Save 'feasibility' to txt file in the one line format with space separated values
     feasibility_file = os.path.join(saving_path, 'feasibility_python.txt')
