@@ -25,8 +25,11 @@ problem_names = [file.strip().replace('.py', '') for file in file.readlines() if
 file.close()
 
 # Exclude some problems
+# 'HS67', 'HS68', 'HS69', 'HS85', 'HS88', 'HS89', 'HS90', 'HS91', 'HS92' are under development and not ready for use
+# 'TWIRIBG1' will kill the process if run, so we exclude it
 problem_exclude = [
-    'SPARCO10LS' 'SPARCO10' 'SPARCO11LS' 'SPARCO11' 'SPARCO12LS' 'SPARCO12' 'SPARCO2LS' 'SPARCO2' 'SPARCO3LS' 'SPARCO3' 'SPARCO5LS' 'SPARCO5' 'SPARCO7LS' 'SPARCO7' 'SPARCO8LS' 'SPARCO8' 'SPARCO9LS' 'SPARCO9' 'ROSSIMP3_mp']
+    'SPARCO10LS', 'SPARCO10', 'SPARCO11LS', 'SPARCO11', 'SPARCO12LS', 'SPARCO12', 'SPARCO2LS', 'SPARCO2', 'SPARCO3LS', 'SPARCO3', 'SPARCO5LS', 'SPARCO5', 'SPARCO7LS', 'SPARCO7', 'SPARCO8LS', 'SPARCO8', 'SPARCO9LS', 'SPARCO9', 'ROSSIMP3_mp', 'HS67', 'HS68', 'HS69', 'HS85', 'HS88', 'HS89', 'HS90', 'HS91', 'HS92', 'TWIRIBG1'
+]
 problem_names = [name for name in problem_names if name not in problem_exclude]
 
 # List all known feasibility problems
