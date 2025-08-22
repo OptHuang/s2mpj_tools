@@ -16,7 +16,7 @@ function s_getInfo()
     problem_names = problem_names{1};
 
     % Exclude some problems
-    problem_exclude = {'SPARCO10LS.m'; 'SPARCO10.m'; 'SPARCO11LS.m'; 'SPARCO11.m'; 'SPARCO12LS.m'; 'SPARCO12.m'; 'SPARCO2LS.m'; 'SPARCO2.m'; 'SPARCO3LS.m'; 'SPARCO3.m'; 'SPARCO5LS.m'; 'SPARCO5.m'; 'SPARCO7LS.m'; 'SPARCO7.m'; 'SPARCO8LS.m'; 'SPARCO8.m'; 'SPARCO9LS.m'; 'SPARCO9.m'; 'ROSSIMP3_mp.m'};
+    problem_exclude = {'SPARCO10LS.m'; 'SPARCO10.m'; 'SPARCO11LS.m'; 'SPARCO11.m'; 'SPARCO12LS.m'; 'SPARCO12.m'; 'SPARCO2LS.m'; 'SPARCO2.m'; 'SPARCO3LS.m'; 'SPARCO3.m'; 'SPARCO5LS.m'; 'SPARCO5.m'; 'SPARCO7LS.m'; 'SPARCO7.m'; 'SPARCO8LS.m'; 'SPARCO8.m'; 'SPARCO9LS.m'; 'SPARCO9.m'; 'ROSSIMP3_mp.m'; 'HS67.m'; 'HS68.m'; 'HS69.m'; 'HS85.m'; 'HS88.m'; 'HS89.m'; 'HS90.m'; 'HS91.m'; 'HS92.m'};
     problem_names = setdiff(problem_names, problem_exclude);
 
     % List all known feasibility problems
