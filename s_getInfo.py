@@ -171,12 +171,16 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
 
     try:
         f = run_with_timeout(p.fun, (p.x0,), timeout)
-        if np.size(f) == 0 or np.isnan(f) or problem_name in known_feasibility:
+        if problem_name == 'LIN':
+            info_single['isfeasibility'] = 0
+        elif np.size(f) == 0 or np.isnan(f) or problem_name in known_feasibility:
             info_single['isfeasibility'] = 1
             feasibility.append(problem_name)
         else:
             info_single['isfeasibility'] = 0
-        if np.size(f) == 0 or np.isnan(f) or (problem_name in known_feasibility and problem_name != 'HS8'):
+        if problem_name == 'LIN':
+            info_single['f0'] = np.nan
+        elif np.size(f) == 0 or np.isnan(f) or (problem_name in known_feasibility and problem_name != 'HS8'):
             info_single['f0'] = 0
         else:
             info_single['f0'] = f
@@ -270,24 +274,19 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
 
     # Define a sub-function to process each argument (so that later we can use the ``run_with_timeout`` function)
     def process_arg(problem_name, arg, fixed_argins):
-        """处理单个参数值的函数"""
         try:
-            # 加载问题
             p = s2mpj_load(problem_name, *fixed_argins, arg)
-            
-            # 收集所有需要的数据
+
             result = {}
             result['n'] = p.n
             result['mb'] = p.mb
             result['ml'] = sum(p.xl > -np.inf)
             result['mu'] = sum(p.xu < np.inf)
-            
-            # 安全地获取可能导致错误的属性
+
             try:
                 result['mcon'] = p.mcon
             except AttributeError as e:
                 if "'Problem' object has no attribute '_m_nonlinear_ub'" in str(e):
-                    # 直接计算 mcon
                     result['mcon'] = p.mlcon + p.m_nonlinear_ub + p.m_nonlinear_eq
                 else:
                     raise e
@@ -298,7 +297,6 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
                 result['mnlcon'] = p.mnlcon
             except AttributeError as e:
                 if "'Problem' object has no attribute '_m_nonlinear" in str(e):
-                    # 直接计算 mnlcon
                     result['mnlcon'] = p.m_nonlinear_ub + p.m_nonlinear_eq
                 else:
                     raise e
@@ -310,7 +308,6 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
             result['m_nonlinear_ub'] = p.m_nonlinear_ub
             result['m_nonlinear_eq'] = p.m_nonlinear_eq
             
-            # 计算函数值
             if problem_name in known_feasibility:
                 result['f0'] = 0
             else:

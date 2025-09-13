@@ -364,12 +364,16 @@ function info_init = get_init_info(problem_name, known_feasibility)
     % f0 and isfeasibility
     try
         info_init{17} = p.fun(p.x0);
-        if isempty(info_init{17}) || isnan(info_init{17}) || ismember(problem_name, known_feasibility)
+        if strcmp(problem_name, 'LIN')
+            info_init{18} = 0;
+        elseif isempty(info_init{17}) || isnan(info_init{17}) || ismember(problem_name, known_feasibility)
             info_init{18} = 1;
         else
             info_init{18} = 0;
         end
-        if isempty(info_init{17}) || isnan(info_init{17}) || (ismember(problem_name, known_feasibility) && ~strcmp(problem_name, 'HS8'))
+        if strcmp(problem_name, 'LIN')
+            info_init{17} = NaN;
+        elseif isempty(info_init{17}) || isnan(info_init{17}) || (ismember(problem_name, known_feasibility) && ~strcmp(problem_name, 'HS8'))
             info_init{17} = 0;
         end
     catch
