@@ -168,26 +168,23 @@ def get_problem_info(problem_name, known_feasibility, problem_argins=None):
         info_single['m_nonlinear_eq'] = p.m_nonlinear_eq
     except Exception as e:
         print(f"Error while getting problem info for {problem_name}: {e}")
-    
-    if problem_name in known_feasibility:
-        info_single['isfeasibility'] = 1
-        info_single['f0'] = 0
-        feasibility.append(problem_name)
-    else:
-        try:
-            f = run_with_timeout(p.fun, (p.x0,), timeout)
-            if np.size(f) == 0 or np.isnan(f) or problem_name in known_feasibility:
-                info_single['f0'] = 0
-                info_single['isfeasibility'] = 1
-                feasibility.append(problem_name)
-            else:
-                info_single['f0'] = f
-                info_single['isfeasibility'] = 0
-        except Exception as e:
-            print(f"Error while evaluating function for {problem_name}: {e}")
-            info_single['f0'] = 0
+
+    try:
+        f = run_with_timeout(p.fun, (p.x0,), timeout)
+        if np.size(f) == 0 or np.isnan(f) or problem_name in known_feasibility:
             info_single['isfeasibility'] = 1
             feasibility.append(problem_name)
+        else:
+            info_single['isfeasibility'] = 0
+        if np.size(f) == 0 or np.isnan(f) or (problem_name in known_feasibility and problem_name != 'HS8'):
+            info_single['f0'] = 0
+        else:
+            info_single['f0'] = f
+    except Exception as e:
+        print(f"Error while evaluating function for {problem_name}: {e}")
+        info_single['f0'] = 0
+        info_single['isfeasibility'] = 1
+        feasibility.append(problem_name)
     
     if problem_name in feasibility:
         info_single['isgrad'] = 1
