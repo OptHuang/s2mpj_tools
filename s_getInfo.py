@@ -407,7 +407,7 @@ if __name__ == "__main__":
             print(f"  - {problem}")
     df_clean = df[~unknown_mask]
 
-    df_clean.to_csv(os.path.join(saving_path, 'probinfo_python.csv'), index=False)
+    df_clean.to_csv(os.path.join(saving_path, 'probinfo_python.csv'), index=False, na_rep='nan')
 
     # Save 'feasibility' to txt file in the one line format with space separated values
     feasibility_file = os.path.join(saving_path, 'feasibility_python.txt')
